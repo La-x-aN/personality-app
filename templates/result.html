@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container result">
+        <h1>Your Personality Prediction</h1>
+        
+        <div class="result-card {{ personality|lower }}">
+            <h2>You are likely an:</h2>
+            <div class="personality">{{ personality }}</div>
+            <p>Confidence: {{ confidence }}</p>
+        </div>
+        
+        <h3>Your Responses:</h3>
+        <ul class="responses">
+            {% for feature, value in features.items() %}
+            <li>{{ feature.replace('_', ' ').title() }}: <strong>{{ value }}</strong></li>
+            {% endfor %}
+        </ul>
+        
+        <a href="/" class="btn">Take Test Again</a>
+    </div>
+</body>
+</html>
