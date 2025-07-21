@@ -1,68 +1,111 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f7fa;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     color: #333;
     line-height: 1.6;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 700px;
     margin: 40px auto;
-    padding: 20px;
+    padding: 30px;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
+
 
 h1 {
     color: #2c3e50;
     text-align: center;
+    margin-bottom: 10px;
+    font-size: 2.2rem;
+}
+
+p {
+    text-align: center;
+    color: #7f8c8d;
     margin-bottom: 30px;
+    font-size: 1.1rem;
 }
 
 .form-group {
     margin-bottom: 25px;
-    padding: 15px;
+    padding: 20px;
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 10px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.form-group:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
 }
 
 label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     font-weight: 600;
     color: #2c3e50;
+    font-size: 1.1rem;
 }
+
 
 input[type="range"] {
     width: 100%;
-    margin: 10px 0;
+    margin: 15px 0;
+    height: 10px;
+    border-radius: 5px;
+    background: #e0e7ff;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .scale-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8em;
-    color: #6c757d;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-top: 5px;
 }
+
 
 button {
     display: block;
     width: 100%;
-    padding: 12px;
+    padding: 15px;
     background: #3498db;
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 16px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 button:hover {
     background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+button:active {
+    transform: translateY(1px);
 }
 
 .result-card {
