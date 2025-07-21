@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personality Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Personality Predictor</h1>
+        <p>Answer a few questions to discover if you're an Introvert or Extrovert</p>
+        
+        <form action="/predict" method="POST">
+            {% for feature in features %}
+            <div class="form-group">
+                <label for="{{ feature }}">{{ feature.replace('_', ' ').title() }} (1-5):</label>
+                <input type="range" id="{{ feature }}" name="{{ feature }}" min="1" max="5" value="3" 
+                       oninput="document.getElementById('{{ feature }}-value').innerText = this.value">
+                <span id="{{ feature }}-value">3</span>
+                <div class="scale-labels">
+                    <span>Low</span>
+                    <span>Medium</span>
+                    <span>High</span>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <button type="submit">Predict Personality</button>
+        </form>
+    </div>
+</body>
+</html>
