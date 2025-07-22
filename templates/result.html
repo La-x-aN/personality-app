@@ -3,27 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prediction Result</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Personality Result</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container result">
-        <h1>Your Personality Prediction</h1>
-        
-        <div class="result-card {{ personality|lower }}">
-            <h2>You are likely an:</h2>
-            <div class="personality">{{ personality }}</div>
-            <p>Confidence: {{ confidence }}</p>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="PersonaInsight Logo">
+                <h1>PersonaInsight</h1>
+            </div>
+        </header>
+
+        <div class="result-container">
+            <h2>Your Personality Analysis</h2>
+            
+            <div class="personality-card {{ personality|lower }}">
+                <div class="personality-header">
+                    <h3>{{ personality }}</h3>
+                    <p>Confidence: {{ confidence }}</p>
+                </div>
+                
+                <div class="confidence-plot">
+                    <img src="data:image/png;base64,{{ plot_url }}" alt="Confidence Visualization">
+                </div>
+                
+                <div class="traits">
+                    {% if personality == "Extrovert" %}
+                    <p>Key characteristics of extroverts:</p>
+                    <ul>
+                        <li>Gain energy from social interactions</li>
+                        <li>Enjoy being the center of attention</li>
+                        <li>Think out loud and process externally</li>
+                        <li>Prefer group activities</li>
+                        <li>Have a wide circle of friends</li>
+                    </ul>
+                    {% else %}
+                    <p>Key characteristics of introverts:</p>
+                    <ul>
+                        <li>Recharge through alone time</li>
+                        <li>Prefer deep conversations to small talk</li>
+                        <li>Think before speaking</li>
+                        <li>Enjoy solitary activities</li>
+                        <li>Have a small circle of close friends</li>
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="input-summary">
+                <h3>Your Input Summary</h3>
+                <table>
+                    {% for key, value in inputs.items() %}
+                    <tr>
+                        <th>{{ key.replace('_', ' ').title() }}</th>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            
+            <a href="/" class="submit-btn">Analyze Again</a>
         </div>
-        
-        <h3>Your Responses:</h3>
-        <ul class="responses">
-            {% for feature, value in features.items() %}
-            <li>{{ feature.replace('_', ' ').title() }}: <strong>{{ value }}</strong></li>
-            {% endfor %}
-        </ul>
-        
-        <a href="/" class="btn">Take Test Again</a>
     </div>
 </body>
 </html>

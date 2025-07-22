@@ -3,98 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personality Predictor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Personality Classifier</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <h1>Personality Predictor</h1>
-        <p>Answer a few questions to discover if you're an Introvert or Extrovert</p>
-        
-        <form action="/predict" method="POST">
-            <div class="form-group">
-                <label for="social_going">Social Going (How often do you go out?):</label>
-                <input type="range" id="social_going" name="social_going" min="1" max="5" value="3" 
-                       oninput="document.getElementById('social_going-value').innerText = this.value">
-                <span id="social_going-value">3</span>
-                <div class="scale-labels">
-                    <span>Rarely</span>
-                    <span>Sometimes</span>
-                    <span>Often</span>
+        <header>
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="PersonaInsight Logo">
+                <h1>PersonaInsight</h1>
+            </div>
+            <p>Discover your personality traits using our AI-powered classifier</p>
+        </header>
+
+        {% if error %}
+        <div class="error-message">
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
+
+        <form action="/predict" method="POST" class="prediction-form">
+            <h2>Personality Assessment</h2>
+            <p>Please provide information about your social behaviors and preferences:</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="time_spent_alone">Time spent alone (hours/day)</label>
+                    <input type="number" step="0.1" id="time_spent_alone" name="time_spent_alone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="social_event_attendance">Social events attended (per month)</label>
+                    <input type="number" id="social_event_attendance" name="social_event_attendance" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="going_out">Frequency of going out (1-10)</label>
+                    <input type="number" min="1" max="10" id="going_out" name="going_out" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="friends">Number of close friends</label>
+                    <input type="number" id="friends" name="friends" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="posting">Social media posts (per week)</label>
+                    <input type="number" id="posting" name="posting" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="avoids_interaction">Avoids interaction (1-10)</label>
+                    <input type="number" min="1" max="10" id="avoids_interaction" name="avoids_interaction" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="energetic">Energetic level (1-10)</label>
+                    <input type="number" min="1" max="10" id="energetic" name="energetic" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="social_but_not_social">"Social but not social" (1-10)</label>
+                    <input type="number" min="1" max="10" id="social_but_not_social" name="social_but_not_social" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="stage_fear">Experience stage fear?</label>
+                    <select id="stage_fear" name="stage_fear" required>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="drained_after_socializing">Feel drained after socializing?</label>
+                    <select id="drained_after_socializing" name="drained_after_socializing" required>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="friend_post">Friend Posts (How many friends do you interact with?):</label>
-                <input type="range" id="friend_post" name="friend_post" min="1" max="5" value="3" 
-                       oninput="document.getElementById('friend_post-value').innerText = this.value">
-                <span id="friend_post-value">3</span>
-                <div class="scale-labels">
-                    <span>Few</span>
-                    <span>Some</span>
-                    <span>Many</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="avoids_interaction">Avoids Interaction (Do you avoid social interactions?):</label>
-                <input type="range" id="avoids_interaction" name="avoids_interaction" min="1" max="5" value="3" 
-                       oninput="document.getElementById('avoids_interaction-value').innerText = this.value">
-                <span id="avoids_interaction-value">3</span>
-                <div class="scale-labels">
-                    <span>Never</span>
-                    <span>Sometimes</span>
-                    <span>Always</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="drained_going">Drained by Going Out (Do you feel drained after socializing?):</label>
-                <input type="range" id="drained_going" name="drained_going" min="1" max="5" value="3" 
-                       oninput="document.getElementById('drained_going-value').innerText = this.value">
-                <span id="drained_going-value">3</span>
-                <div class="scale-labels">
-                    <span>Never</span>
-                    <span>Sometimes</span>
-                    <span>Always</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="alone">Alone Time (How much alone time do you need?):</label>
-                <input type="range" id="alone" name="alone" min="1" max="5" value="3" 
-                       oninput="document.getElementById('alone-value').innerText = this.value">
-                <span id="alone-value">3</span>
-                <div class="scale-labels">
-                    <span>Little</span>
-                    <span>Moderate</span>
-                    <span>Much</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="social_engagement">Social Engagement (How engaged are you in social activities?):</label>
-                <input type="range" id="social_engagement" name="social_engagement" min="1" max="5" value="3" 
-                       oninput="document.getElementById('social_engagement-value').innerText = this.value">
-                <span id="social_engagement-value">3</span>
-                <div class="scale-labels">
-                    <span>Low</span>
-                    <span>Medium</span>
-                    <span>High</span>
-                </div>
-            </div>
-            
-            <!-- Hidden inputs for other features -->
-            <input type="hidden" name="stage_fear" value="3">
-            <input type="hidden" name="drained_after_socializing" value="3">
-            <input type="hidden" name="social_event_attendance" value="3">
-            <input type="hidden" name="going_outside" value="3">
-            <input type="hidden" name="time_spent_alone" value="3">
-            <input type="hidden" name="friends_circle_size" value="3">
-            <input type="hidden" name="post_frequency" value="3">
-            
-            <button type="submit">Predict Personality</button>
+            <button type="submit" class="submit-btn">Analyze Personality</button>
         </form>
+
+        <div class="model-info">
+            <h2>About Our Model</h2>
+            <p>Our personality classifier uses an ensemble of advanced machine learning algorithms:</p>
+            <ul>
+                <li>LightGBM</li>
+                <li>XGBoost</li>
+                <li>CatBoost</li>
+            </ul>
+            <p>The model was trained on thousands of data points and achieves over 90% accuracy in personality classification.</p>
+        </div>
     </div>
 </body>
 </html>
