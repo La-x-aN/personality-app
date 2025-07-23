@@ -3,27 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prediction Result</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Personality Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            color: #475569;
+            background-color: #f8fafc;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .btn-predict {
+            background-color: #6366f1;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            border: none;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+            width: 100%;
+        }
+        .btn-predict:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+        .result-box {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin-top: 1.5rem;
+            word-wrap: break-word;
+        }
+        .error-box {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #b91c1c;
+        }
+        .confidence-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #3b82f6;
+            margin-top: 0.5rem;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .input-group {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container result">
-        <h1>Your Personality Prediction</h1>
-        
-        <div class="result-card {{ personality|lower }}">
-            <h2>You are likely an:</h2>
-            <div class="personality">{{ personality }}</div>
-            <p>Confidence: {{ confidence }}</p>
-        </div>
-        
-        <h3>Your Responses:</h3>
-        <ul class="responses">
-            {% for feature, value in features.items() %}
-            <li>{{ feature.replace('_', ' ').title() }}: <strong>{{ value }}</strong></li>
-            {% endfor %}
-        </ul>
-        
-        <a href="/" class="btn">Take Test Again</a>
+    <div class="container">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">Personality Predictor</h1>
+
+        <form action="/predict" method="post" class="space-y-4">
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="time_spent_alone">Time Spent Alone (hours/day):</label>
+                    <input type="number" id="time_spent_alone" name="time_spent_alone" step="0.1" min="0" required placeholder="e.g., 8.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="social_event_attendance">Social Event Attendance (times/month):</label>
+                    <input type="number" id="social_event_attendance" name="social_event_attendance" min="0" required placeholder="e.g., 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="going_outside">Going Outside (times/week):</label>
+                    <input type="number" id="going_outside" name="going_outside" min="0" required placeholder="e.g., 2">
+                </div>
+
+                <div class="form-group">
+                    <label for="friends_circle_size">Friends Circle Size:</label>
+                    <input type="number" id="friends_circle_size" name="friends_circle_size" min="0" required placeholder="e.g., 5">
+                </div>
+
+                <div class="form-group">
+                    <label for="post_frequency">Post Frequency (posts/month):</label>
+                    <input type="number" id="post_frequency" name="post_frequency" min="0" required placeholder="e.g., 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="stage_fear">Stage Fear:</label>
+                    <select id="stage_fear" name="stage_fear" required>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="drained_after_socializing">Drained After Socializing:</label>
+                    <select id="drained_after_socializing" name="drained_after_socializing" required>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-predict">Predict Personality</button>
+        </form>
+
+        {% if prediction_result %}
+            <div class="result-box {% if is_error %}error-box{% endif %}">
+                <p>Predicted Personality: <span class="font-bold">{{ prediction_result }}</span></p>
+                {% if confidence %}
+                    <p class="confidence-text">Confidence: {{ "%.2f" | format(confidence * 100) }}%</p>
+                {% endif %}
+                {% if input_data %}
+                    <p class="text-sm text-gray-600 mt-2">Input Data:</p>
+                    <pre class="text-xs text-gray-500 text-left overflow-auto p-2 bg-gray-50 rounded-md">{{ input_data | tojson(indent=2) }}</pre>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 </body>
 </html>
