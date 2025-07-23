@@ -13,6 +13,16 @@ from sklearn.pipeline import Pipeline
 from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
+import logging
+from io import BytesIO
+import base64
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -107,21 +117,26 @@ class EnsembleModel(BaseEstimator, ClassifierMixin):
         return self.ensemble_classifier.predict_proba(X)
 
 MODEL_PATH = os.path.join('saved_models', 'personality_predictor_artifacts.pkl')
-model_artifacts = None
+final_pipeline = None
+target_label_map = None
+
+if not os.path.exists(os.path.dirname(MODEL_PATH)):
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
 try:
-    model_artifacts = joblib.load(MODEL_PATH)
-    print(f"Model artifacts loaded successfully from {MODEL_PATH}")
+    artifacts = joblib.load(MODEL_PATH)
+    final_pipeline = artifacts['final_pipeline']
+    target_label_map = artifacts['target_label_map']
+    logger.info(f"Model artifacts loaded successfully from {MODEL_PATH}")
 except FileNotFoundError:
-    print(f"Error: Model file not found at {MODEL_PATH}. Please ensure it's in the correct directory.")
-    print("You need to run the model training and save the 'personality_predictor_artifacts.pkl' from your Jupyter Notebook.")
-    model_artifacts = None
+    logger.error(f"Error: Model artifacts file not found at {MODEL_PATH}. Please ensure it's in the correct directory.")
+    logger.error("You need to run the model training and save the 'personality_predictor_artifacts.pkl' from your Jupyter Notebook.")
+    final_pipeline = None
+    target_label_map = None
 except Exception as e:
-    print(f"Error loading model: {e}. This often means a custom class (like FeatureEngineer or EnsembleModel) is not defined or is defined differently than when the model was saved, or there's a library version mismatch (e.g., numpy, scikit-learn).")
-    model_artifacts = None
-
-final_pipeline = model_artifacts['final_pipeline'] if model_artifacts else None
-target_label_map = model_artifacts['target_label_map'] if model_artifacts else None
+    logger.error(f"Error loading model artifacts: {e}. This often means a custom class (like FeatureEngineer or EnsembleModel) is not defined or is defined differently than when the model was saved, or there's a library version mismatch (e.g., numpy, scikit-learn).", exc_info=True)
+    final_pipeline = None
+    target_label_map = None
 
 def clean_column_names_for_input(df):
     new_columns = []
@@ -136,7 +151,7 @@ def preprocess_input(input_data_dict):
     df_input = pd.DataFrame([input_data_dict])
     df_input = clean_column_names_for_input(df_input)
 
-    expected_cols_for_pipeline_input = [
+    expected_cols_after_clean = [
         'time_spent_alone',
         'social_event_attendance',
         'going_outside',
@@ -146,30 +161,46 @@ def preprocess_input(input_data_dict):
         'drained_after_socializing'
     ]
 
-    for col in expected_cols_for_pipeline_input:
+    for col in expected_cols_after_clean:
         if col not in df_input.columns:
             if col in ['time_spent_alone', 'social_event_attendance', 'going_outside', 'friends_circle_size', 'post_frequency']:
                 df_input[col] = np.nan
-            elif col in ['stage_fear', 'drained_after_socializing']:
-                df_input[col] = None
             else:
-                df_input[col] = np.nan
+                df_input[col] = None
             
-    df_input = df_input[expected_cols_for_pipeline_input]
+    df_input = df_input[expected_cols_after_clean]
 
     return df_input
 
+def create_confidence_plot(proba_values, target_label_map):
+    plt.figure(figsize=(8, 4))
+    
+    labels = [target_label_map.get(0, 'Class 0'), target_label_map.get(1, 'Class 1')]
+    colors = ['#e76f51', '#2a9d8f']
+
+    plt.barh(labels, [proba_values[0], proba_values[1]], color=colors)
+    plt.title('Prediction Confidence', fontsize=16)
+    plt.xlabel('Probability')
+    plt.xlim(0, 1)
+    plt.xticks(np.arange(0, 1.1, 0.1))
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    
+    buf = BytesIO()
+    plt.savefig(buf, format='png', dpi=100)
+    buf.seek(0)
+    plot_data = base64.b64encode(buf.getvalue()).decode('utf8')
+    plt.close()
+    return plot_data
+
 @app.route('/')
 def home():
-    return render_template('index.html', prediction_result=None, confidence=None)
+    return render_template('index.html', prediction_result=None, confidence=None, input_data={}, error=None, plot_url=None)
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if final_pipeline is None:
-        return render_template('index.html',
-                               prediction_result="Error: Model not loaded. Please check server logs.",
-                               confidence=None,
-                               is_error=True)
+    data = {}
+    input_data_for_template = {}
 
     try:
         data = {
@@ -181,6 +212,20 @@ def predict():
             'Stage fear': request.form['stage_fear'],
             'Drained after socializing': request.form['drained_after_socializing']
         }
+        input_data_for_template = {
+            k.strip().replace(' ', '_').lower(): v 
+            for k, v in data.items()
+        }
+
+        if final_pipeline is None or target_label_map is None:
+            error_msg = "Error: Model components not loaded. Please check server logs and ensure the model is trained and saved."
+            logger.error(error_msg)
+            return render_template('index.html',
+                                   prediction_result=None,
+                                   confidence=None,
+                                   plot_url=None,
+                                   error=error_msg,
+                                   input_data=input_data_for_template)
 
         processed_df = preprocess_input(data)
 
@@ -190,28 +235,88 @@ def predict():
         predicted_label = target_label_map.get(prediction_encoded, 'Unknown')
         
         confidence = probabilities[prediction_encoded]
+        plot_url = create_confidence_plot(probabilities, target_label_map)
 
         return render_template('index.html',
                                prediction_result=predicted_label,
                                confidence=confidence,
-                               input_data=data)
+                               plot_url=plot_url,
+                               input_data=input_data_for_template,
+                               error=None)
 
     except ValueError as ve:
+        error_msg = f"Input Error: Please ensure all fields are correctly filled and are numbers where expected. Details: {ve}"
+        logger.error(error_msg, exc_info=True)
         return render_template('index.html',
-                               prediction_result=f"Input Error: Please ensure all fields are correctly filled and are numbers where expected. Details: {ve}",
+                               prediction_result=None,
                                confidence=None,
-                               is_error=True)
+                               plot_url=None,
+                               error=error_msg,
+                               input_data=input_data_for_template)
     except KeyError as ke:
+        error_msg = f"Missing Input: A required field was not provided. Details: {ke}"
+        logger.error(error_msg, exc_info=True)
         return render_template('index.html',
-                               prediction_result=f"Missing Input: A required field was not provided. Details: {ke}",
+                               prediction_result=None,
                                confidence=None,
-                               is_error=True)
+                               plot_url=None,
+                               error=error_msg,
+                               input_data=input_data_for_template)
     except Exception as e:
-        print(f"An unexpected error occurred during prediction: {e}")
+        error_msg = f"An unexpected error occurred during prediction: {e}"
+        logger.error(error_msg, exc_info=True)
         return render_template('index.html',
-                               prediction_result=f"An unexpected error occurred during prediction: {e}",
+                               prediction_result=None,
                                confidence=None,
-                               is_error=True)
+                               plot_url=None,
+                               error=error_msg,
+                               input_data=input_data_for_template)
+
+@app.route('/api/predict', methods=['POST'])
+def api_predict():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No input data provided"}), 400
+    
+    if final_pipeline is None or target_label_map is None:
+        return jsonify({"error": "Model components not loaded on server."}), 500
+
+    try:
+        api_to_form_map = {
+            'time_spent_alone': 'Time spent alone',
+            'social_event_attendance': 'Social event attendance',
+            'going_outside': 'Going outside',
+            'friends_circle_size': 'Friends circle size',
+            'post_frequency': 'Post frequency',
+            'stage_fear': 'Stage fear',
+            'drained_after_socializing': 'Drained after socializing'
+        }
+        form_data_from_api = {api_to_form_map.get(k, k): v for k, v in data.items()}
+
+        # Directly use final_pipeline for prediction
+        processed_df = preprocess_input(form_data_from_api)
+        personality_encoded = final_pipeline.predict(processed_df)[0]
+        probabilities = final_pipeline.predict_proba(processed_df)[0]
+
+        personality = target_label_map.get(personality_encoded, 'Unknown')
+        confidence = probabilities[personality_encoded]
+
+        return jsonify({
+            "personality": personality,
+            "confidence": confidence,
+            "status": "success"
+        })
+    except Exception as e:
+        logger.error(f"API prediction error: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    if not os.path.exists(template_dir):
+        os.makedirs(template_dir)
+    
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+
+    app.run(host='0.0.0.0', port=5000, debug=True)
