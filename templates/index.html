@@ -5,151 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personality Predictor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-        }
-        .form-group label {
-            font-weight: 600;
-            color: #264653;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: #333;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #2a9d8f;
-        }
-        .btn-submit {
-            background-color: #2a9d8f;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-            width: 100%;
-        }
-        .btn-submit:hover {
-            background-color: #218579;
-        }
-        .result-box {
-            background-color: #e9f7f6;
-            border: 1px solid #2a9d8f;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .result-box.error {
-            background-color: #ffe0e0;
-            border-color: #e76f51;
-            color: #e76f51;
-        }
-        .result-box p {
-            font-size: 1.1rem;
-            color: #264653;
-            margin-bottom: 10px;
-        }
-        .result-box .prediction {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2a9d8f;
-            margin-bottom: 5px;
-        }
-        .result-box .confidence {
-            font-size: 1.2rem;
-            color: #f4a261;
-        }
-        .result-box.error .prediction {
-            color: #e76f51;
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Personality Predictor</h1>
-        
+<body class="bg-gradient-to-br from-indigo-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
+    <div class="container bg-white rounded-3xl shadow-2xl p-8 md:p-10 w-full max-w-2xl flex flex-col gap-6 transform transition-all duration-300 hover:scale-[1.01]">
+        <h1 class="text-4xl font-extrabold text-center text-gray-900 mb-4 tracking-tight">
+            Discover Your Personality
+        </h1>
+        <p class="text-center text-gray-600 mb-6">
+            Fill out the form below to get an insight into your personality type.
+        </p>
+
+        {% if error %}
+        <div class="result-box error-box animate-fade-in">
+            <p class="font-bold text-lg">Error!</p>
+            <p class="text-red-700 mt-1">{{ error }}</p>
+        </div>
+        {% endif %}
+
         <form action="/predict" method="post" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="input-group">
                 <div class="form-group">
-                    <label for="time_spent_alone">Time spent alone (hours):</label>
-                    <input type="number" step="0.1" id="time_spent_alone" name="time_spent_alone" required
-                           value="{{ input_data['Time spent alone'] if input_data else '' }}">
+                    <label for="time_spent_alone">Time Spent Alone (hours/day):</label>
+                    <input type="number" id="time_spent_alone" name="time_spent_alone" step="0.1" min="0" required placeholder="e.g., 8.5"
+                           value="{{ input_data.get('time_spent_alone', '') }}">
                 </div>
+
                 <div class="form-group">
-                    <label for="social_event_attendance">Social event attendance (per month):</label>
-                    <input type="number" step="1" id="social_event_attendance" name="social_event_attendance" required
-                           value="{{ input_data['Social event attendance'] if input_data else '' }}">
+                    <label for="social_event_attendance">Social Event Attendance (times/month):</label>
+                    <input type="number" id="social_event_attendance" name="social_event_attendance" min="0" required placeholder="e.g., 1"
+                           value="{{ input_data.get('social_event_attendance', '') }}">
                 </div>
+
                 <div class="form-group">
-                    <label for="going_outside">Going outside (times per week):</label>
-                    <input type="number" step="1" id="going_outside" name="going_outside" required
-                           value="{{ input_data['Going outside'] if input_data else '' }}">
+                    <label for="going_outside">Going Outside (times/week):</label>
+                    <input type="number" id="going_outside" name="going_outside" min="0" required placeholder="e.g., 2"
+                           value="{{ input_data.get('going_outside', '') }}">
                 </div>
+
                 <div class="form-group">
-                    <label for="friends_circle_size">Friends circle size:</label>
-                    <input type="number" step="1" id="friends_circle_size" name="friends_circle_size" required
-                           value="{{ input_data['Friends circle size'] if input_data else '' }}">
+                    <label for="friends_circle_size">Friends Circle Size:</label>
+                    <input type="number" id="friends_circle_size" name="friends_circle_size" min="0" required placeholder="e.g., 5"
+                           value="{{ input_data.get('friends_circle_size', '') }}">
                 </div>
+
                 <div class="form-group">
-                    <label for="post_frequency">Post frequency (posts per week):</label>
-                    <input type="number" step="1" id="post_frequency" name="post_frequency" required
-                           value="{{ input_data['Post frequency'] if input_data else '' }}">
+                    <label for="post_frequency">Post Frequency (posts/month):</label>
+                    <input type="number" id="post_frequency" name="post_frequency" min="0" required placeholder="e.g., 1"
+                           value="{{ input_data.get('post_frequency', '') }}">
                 </div>
+
                 <div class="form-group">
-                    <label for="stage_fear">Stage fear:</label>
+                    <label for="stage_fear">Stage Fear:</label>
                     <select id="stage_fear" name="stage_fear" required>
                         <option value="">Select...</option>
-                        <option value="Yes" {% if input_data and input_data['Stage fear'] == 'Yes' %}selected{% endif %}>Yes</option>
-                        <option value="No" {% if input_data and input_data['Stage fear'] == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if input_data.get('stage_fear') == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if input_data.get('stage_fear') == 'No' %}selected{% endif %}>No</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="drained_after_socializing">Drained after socializing:</label>
+
+                <div class="form-group full-width">
+                    <label for="drained_after_socializing">Drained After Socializing:</label>
                     <select id="drained_after_socializing" name="drained_after_socializing" required>
                         <option value="">Select...</option>
-                        <option value="Yes" {% if input_data and input_data['Drained after socializing'] == 'Yes' %}selected{% endif %}>Yes</option>
-                        <option value="No" {% if input_data and input_data['Drained after socializing'] == 'No' %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if input_data.get('drained_after_socializing') == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if input_data.get('drained_after_socializing') == 'No' %}selected{% endif %}>No</option>
                     </select>
                 </div>
             </div>
-            <button type="submit" class="btn-submit">Predict Personality</button>
+
+            <button type="submit" class="btn-predict">Predict Personality</button>
         </form>
 
-        {% if prediction_result %}
-            <div class="result-box {% if is_error %}error{% endif %}">
-                {% if is_error %}
-                    <p class="prediction">Error!</p>
-                    <p class="text-red-600">{{ prediction_result }}</p>
-                {% else %}
-                    <p>Predicted Personality:</p>
-                    <p class="prediction">{{ prediction_result }}</p>
-                    <p class="confidence">Confidence: {{ "%.2f" | format(confidence * 100) }}%</p>
+        {% if prediction_result and not error %}
+            <div class="result-box animate-fade-in">
+                <p class="text-2xl md:text-3xl font-bold mb-2">Predicted Personality: <span class="text-indigo-700">{{ prediction_result }}</span></p>
+                {% if confidence is not none %}
+                    <p class="text-lg md:text-xl font-medium text-blue-600">Confidence: <span class="text-purple-700">{{ "%.2f" | format(confidence * 100) }}%</span></p>
+                {% endif %}
+                
+                {% if plot_url %}
+                <div class="mt-8 flex justify-center">
+                    <img src="data:image/png;base64,{{ plot_url }}" alt="Prediction Confidence Plot" class="max-w-full h-auto rounded-lg shadow-lg border border-gray-200">
+                </div>
+                {% endif %}
+
+                {% if input_data %}
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mt-10 mb-5 border-b pb-3 border-gray-200">Your Provided Inputs:</h2>
+                    <div class="bg-gray-50 p-5 rounded-lg text-base text-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4 shadow-sm">
+                        {% for key, value in input_data.items() %}
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-900">{{ key | replace('_', ' ') | title }}:</span>
+                                <span class="text-gray-700">{{ value }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             </div>
         {% endif %}
