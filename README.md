@@ -1,6 +1,6 @@
 # Personality Predictor Web Application
 
-This is a Flask-based web application that uses a pre-trained machine learning model to predict a user's personality type (Introvert or Extrovert) based on several input features.
+This is a Flask-based web application that uses a machine learning model to predict a user's personality type (Introvert or Extrovert) based on several input features.
 
 ## Table of Contents
 
